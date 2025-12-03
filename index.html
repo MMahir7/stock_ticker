@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>S&P 500 Centered Command</title>
+    <title>S&P 500 Titan Command</title>
     <style>
         /* 1. LAYOUT */
         body {
@@ -15,43 +15,51 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: center; /* Vertical Center */
-            align-items: center;     /* Horizontal Center */
-            gap: 50px; /* Space between bars */
+            
+            /* ALIGN TO TOP */
+            justify-content: flex-start; 
+            align-items: center;     
+            
+            padding-top: 0; 
+            
+            /* GAP: Needs to be large because the bars are visually huge now */
+            gap: 110px; 
         }
 
         /* 2. BAR STYLE */
         .ticker-wrapper {
-            /* BASE WIDTH: 55% of screen */
-            /* When zoomed 1.6x, this becomes 88% of the screen visually */
-            width: 55%; 
+            /* WIDTH: 40% * 2.5 Zoom = 100% Screen Width */
+            width: 40%;
             height: 90px;
             
             background-color: #000;
+            
+            /* BORDER: Thicker to match huge font */
+            border: 5px solid #FFFFFF; 
+            border-top: none; /* Optional: Remove top border for flush look */
             border-radius: 0px; 
-            border: 4px solid #FFFFFF; 
+            
             box-shadow: 0 0 50px rgba(255, 255, 255, 0.2);
             overflow: hidden;
             
-            /* ZOOM ENGINE */
-            transform: scale(1.6);
-            /* CRITICAL: Ensures it zooms from the exact middle */
-            transform-origin: center center;
+            /* TITAN ZOOM (2.5x) */
+            transform: scale(2.5);
             
-            /* FORCE CENTERING LOCK */
+            /* LOCK TO TOP CENTER */
+            transform-origin: center top; 
+            
             margin-left: auto;
             margin-right: auto;
-            
             pointer-events: none; 
         }
 
         /* 3. LOADING TEXT */
         #status {
             position: absolute;
-            top: 5%;
+            top: 40%;
             color: #00D5FF;
             font-family: monospace;
-            font-size: 24px;
+            font-size: 30px;
             font-weight: bold;
             text-shadow: 0 0 10px rgba(0, 213, 255, 0.5);
             z-index: 100;
@@ -62,10 +70,10 @@
 </head>
 <body>
 
-    <div id="status">INITIALIZING CENTERED FEED...</div>
+    <div id="status">INITIALIZING TITAN FEED...</div>
 
     <div class="ticker-wrapper" id="bar-1"></div>
-    <div class="ticker-wrapper" id="bar-2"></div>
+    <div class="ticker-wrapper" id="bar-2" style="border-top: 5px solid white;"></div>
 
 <script>
     // --- DATA LIST ---
@@ -74,6 +82,7 @@
     const BAR_1_SYMBOLS = [
         { "proName": "FOREXCOM:SPXUSD", "title": "S&P 500" },
         { "proName": "FOREXCOM:NSXUSD", "title": "Nasdaq 100" },
+        { "proName": "BITSTAMP:BTCUSD", "title": "Bitcoin" },
         { "proName": "NASDAQ:NVDA", "description": "Nvidia" },
         { "proName": "NASDAQ:TSLA", "description": "Tesla" },
         { "proName": "NASDAQ:AAPL", "description": "Apple" },
@@ -220,7 +229,6 @@
         container.appendChild(script);
     }
 
-    
     function start() {
         createWidget('bar-1', BAR_1_SYMBOLS);
         

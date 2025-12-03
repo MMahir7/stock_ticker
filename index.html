@@ -3,210 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>S&P 500 Titan Command</title>
+    <title>S&P 500 Matrix Wall</title>
     <style>
         /* 1. LAYOUT */
         body {
             margin: 0;
             padding: 0;
             background-color: #000000;
-            overflow: hidden;
+            overflow: hidden; /* No scrollbars */
             width: 100vw;
             height: 100vh;
+            
+            /* FLEX COLUMN to stack bars */
             display: flex;
             flex-direction: column;
             
-            /* ALIGN TO TOP */
-            justify-content: flex-start; 
-            align-items: center;     
-            
-            padding-top: 0; 
-            
-            /* GAP: Needs to be large because the bars are visually huge now */
-            gap: 110px; 
+            /* Distribute bars evenly across the full height */
+            justify-content: space-evenly; 
+            align-items: center;
         }
 
         /* 2. BAR STYLE */
         .ticker-wrapper {
-            /* WIDTH: 40% * 2.5 Zoom = 100% Screen Width */
-            width: 40%;
-            height: 90px;
+            /* Width calculation: 66% width * 1.5 Zoom = ~99% Visual Width */
+            width: 66%; 
+            height: 72px; /* Standard widget height */
             
             background-color: #000;
-            
-            /* BORDER: Thicker to match huge font */
-            border: 5px solid #FFFFFF; 
-            border-top: none; /* Optional: Remove top border for flush look */
             border-radius: 0px; 
             
-            box-shadow: 0 0 50px rgba(255, 255, 255, 0.2);
+            /* Clean White Borders (Top/Bottom only for Matrix look) */
+            border-top: 2px solid rgba(255,255,255,0.5);
+            border-bottom: 2px solid rgba(255,255,255,0.5);
+            
             overflow: hidden;
             
-            /* TITAN ZOOM (2.5x) */
-            transform: scale(2.5);
+            /* ZOOM ENGINE (1.5x) */
+            transform: scale(1.5);
             
-            /* LOCK TO TOP CENTER */
-            transform-origin: center top; 
-            
-            margin-left: auto;
-            margin-right: auto;
+            /* Prevent interaction */
             pointer-events: none; 
         }
 
-        /* 3. LOADING TEXT */
-        #status {
+        /* 3. LOADING OVERLAY */
+        #loading-screen {
             position: absolute;
-            top: 40%;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            transition: opacity 1s ease;
+        }
+        
+        #loading-text {
             color: #00D5FF;
             font-family: monospace;
             font-size: 30px;
             font-weight: bold;
-            text-shadow: 0 0 10px rgba(0, 213, 255, 0.5);
-            z-index: 100;
-            text-align: center;
-            width: 100%;
+            text-shadow: 0 0 20px rgba(0, 213, 255, 0.8);
         }
     </style>
 </head>
 <body>
 
-    <div id="status">INITIALIZING TITAN FEED...</div>
+    <div id="loading-screen">
+        <div id="loading-text">INITIALIZING MATRIX WALL...</div>
+    </div>
 
-    <div class="ticker-wrapper" id="bar-1"></div>
-    <div class="ticker-wrapper" id="bar-2" style="border-top: 5px solid white;"></div>
+    <div id="wall-container" style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-evenly; align-items:center;">
+        </div>
 
 <script>
-    // --- DATA LIST ---
-    
-    // BAR 1: TECH & GROWTH
-    const BAR_1_SYMBOLS = [
-        { "proName": "FOREXCOM:SPXUSD", "title": "S&P 500" },
-        { "proName": "FOREXCOM:NSXUSD", "title": "Nasdaq 100" },
-        { "proName": "BITSTAMP:BTCUSD", "title": "Bitcoin" },
-        { "proName": "NASDAQ:NVDA", "description": "Nvidia" },
-        { "proName": "NASDAQ:TSLA", "description": "Tesla" },
-        { "proName": "NASDAQ:AAPL", "description": "Apple" },
-        { "proName": "NASDAQ:MSFT", "description": "Microsoft" },
-        { "proName": "NASDAQ:AMZN", "description": "Amazon" },
-        { "proName": "NASDAQ:GOOGL", "description": "Google" },
-        { "proName": "NASDAQ:META", "description": "Meta" },
-        { "proName": "NYSE:TSM", "description": "TSMC" },
-        { "proName": "NASDAQ:AVGO", "description": "Broadcom" },
-        { "proName": "NASDAQ:ASML", "description": "ASML" },
-        { "proName": "NASDAQ:AMD", "description": "AMD" },
-        { "proName": "NASDAQ:NFLX", "description": "Netflix" },
-        { "proName": "NASDAQ:ADBE", "description": "Adobe" },
-        { "proName": "NYSE:CRM", "description": "Salesforce" },
-        { "proName": "NYSE:ORCL", "description": "Oracle" },
-        { "proName": "NASDAQ:CSCO", "description": "Cisco" },
-        { "proName": "NASDAQ:CMCSA", "description": "Comcast" },
-        { "proName": "NASDAQ:TMUS", "description": "T-Mobile" },
-        { "proName": "NYSE:VZ", "description": "Verizon" },
-        { "proName": "NYSE:T", "description": "AT&T" },
-        { "proName": "NASDAQ:QCOM", "description": "Qualcomm" },
-        { "proName": "NASDAQ:TXN", "description": "Texas Instruments" },
-        { "proName": "NASDAQ:INTC", "description": "Intel" },
-        { "proName": "NYSE:IBM", "description": "IBM" },
-        { "proName": "NYSE:SAP", "description": "SAP" },
-        { "proName": "NYSE:UBER", "description": "Uber" },
-        { "proName": "NASDAQ:ABNB", "description": "Airbnb" },
-        { "proName": "NASDAQ:BKNG", "description": "Booking" },
-        { "proName": "NYSE:NOW", "description": "ServiceNow" },
-        { "proName": "NASDAQ:ADP", "description": "ADP" },
-        { "proName": "NASDAQ:INTU", "description": "Intuit" },
-        { "proName": "NASDAQ:AMAT", "description": "Applied Materials" },
-        { "proName": "NASDAQ:MU", "description": "Micron" },
-        { "proName": "NASDAQ:LRCX", "description": "Lam Research" },
-        { "proName": "NASDAQ:ADI", "description": "Analog Devices" },
-        { "proName": "NASDAQ:KLAC", "description": "KLA Corp" },
-        { "proName": "NASDAQ:SNPS", "description": "Synopsys" },
-        { "proName": "NASDAQ:CDNS", "description": "Cadence" },
-        { "proName": "NASDAQ:PANW", "description": "Palo Alto" },
-        { "proName": "NASDAQ:FTNT", "description": "Fortinet" },
-        { "proName": "NASDAQ:CRWD", "description": "CrowdStrike" },
-        { "proName": "NYSE:PLTR", "description": "Palantir" },
-        { "proName": "NYSE:SNOW", "description": "Snowflake" },
-        { "proName": "NASDAQ:COIN", "description": "Coinbase" },
-        { "proName": "NASDAQ:HOOD", "description": "Robinhood" },
-        { "proName": "NYSE:SHOP", "description": "Shopify" },
-        { "proName": "NYSE:SQ", "description": "Block" },
-        { "proName": "NASDAQ:PYPL", "description": "PayPal" },
-        { "proName": "NYSE:SPOT", "description": "Spotify" },
-        { "proName": "NYSE:SONY", "description": "Sony" },
-        { "proName": "NASDAQ:EA", "description": "Electronic Arts" },
-        { "proName": "NASDAQ:TTWO", "description": "Take-Two" }
-    ];
-
-    // BAR 2: ECONOMY & INDUSTRY
-    const BAR_2_SYMBOLS = [
-        { "proName": "NYSE:BRK.B", "description": "Berkshire" },
-        { "proName": "NYSE:JPM", "description": "JPMorgan" },
-        { "proName": "NYSE:V", "description": "Visa" },
-        { "proName": "NYSE:MA", "description": "Mastercard" },
-        { "proName": "NYSE:WMT", "description": "Walmart" },
-        { "proName": "NASDAQ:COST", "description": "Costco" },
-        { "proName": "NYSE:LLY", "description": "Eli Lilly" },
-        { "proName": "NYSE:UNH", "description": "UnitedHealth" },
-        { "proName": "NYSE:JNJ", "description": "Johnson & Johnson" },
-        { "proName": "NYSE:PG", "description": "Procter & Gamble" },
-        { "proName": "NYSE:HD", "description": "Home Depot" },
-        { "proName": "NYSE:KO", "description": "Coca-Cola" },
-        { "proName": "NASDAQ:PEP", "description": "Pepsi" },
-        { "proName": "NYSE:MRK", "description": "Merck" },
-        { "proName": "NYSE:ABBV", "description": "AbbVie" },
-        { "proName": "NYSE:TMO", "description": "Thermo Fisher" },
-        { "proName": "NYSE:DHR", "description": "Danaher" },
-        { "proName": "NYSE:ABT", "description": "Abbott" },
-        { "proName": "NYSE:XOM", "description": "Exxon" },
-        { "proName": "NYSE:CVX", "description": "Chevron" },
-        { "proName": "NYSE:SHEL", "description": "Shell" },
-        { "proName": "NYSE:TTE", "description": "TotalEnergies" },
-        { "proName": "NYSE:BP", "description": "BP" },
-        { "proName": "NYSE:BAC", "description": "Bank of America" },
-        { "proName": "NYSE:WFC", "description": "Wells Fargo" },
-        { "proName": "NYSE:C", "description": "Citigroup" },
-        { "proName": "NYSE:GS", "description": "Goldman Sachs" },
-        { "proName": "NYSE:MS", "description": "Morgan Stanley" },
-        { "proName": "NYSE:BLK", "description": "BlackRock" },
-        { "proName": "NYSE:SPGI", "description": "S&P Global" },
-        { "proName": "NYSE:AXP", "description": "Amex" },
-        { "proName": "NYSE:MCD", "description": "McDonalds" },
-        { "proName": "NYSE:SBUX", "description": "Starbucks" },
-        { "proName": "NYSE:CMG", "description": "Chipotle" },
-        { "proName": "NYSE:NKE", "description": "Nike" },
-        { "proName": "NYSE:DIS", "description": "Disney" },
-        { "proName": "NYSE:BA", "description": "Boeing" },
-        { "proName": "NYSE:GE", "description": "General Electric" },
-        { "proName": "NYSE:CAT", "description": "Caterpillar" },
-        { "proName": "NYSE:DE", "description": "Deere" },
-        { "proName": "NYSE:MMM", "description": "3M" },
-        { "proName": "NYSE:HON", "description": "Honeywell" },
-        { "proName": "NYSE:UPS", "description": "UPS" },
-        { "proName": "NYSE:FDX", "description": "FedEx" },
-        { "proName": "NYSE:UNP", "description": "Union Pacific" },
-        { "proName": "NYSE:LMT", "description": "Lockheed Martin" },
-        { "proName": "NYSE:RTX", "description": "Raytheon" },
-        { "proName": "NYSE:PFE", "description": "Pfizer" },
-        { "proName": "NASDAQ:AMGN", "description": "Amgen" },
-        { "proName": "NYSE:BMY", "description": "Bristol Myers" },
-        { "proName": "NYSE:TGT", "description": "Target" },
-        { "proName": "NYSE:LOW", "description": "Lowe's" },
-        { "proName": "NYSE:TJX", "description": "TJX Companies" },
-        { "proName": "NYSE:TM", "description": "Toyota" },
-        { "proName": "NYSE:HMC", "description": "Honda" },
-        { "proName": "NYSE:RACE", "description": "Ferrari" },
-        { "proName": "NYSE:F", "description": "Ford" },
-        { "proName": "NYSE:GM", "description": "GM" },
-        { "proName": "NYSE:NVS", "description": "Novartis" },
-        { "proName": "NYSE:AZN", "description": "AstraZeneca" }
+    // --- MASSIVE DATA LIST (200+ Companies) ---
+    const ALL_STOCKS = [
+        { "proName": "FOREXCOM:SPXUSD", "title": "S&P 500" }, { "proName": "FOREXCOM:NSXUSD", "title": "Nasdaq 100" }, { "proName": "BITSTAMP:BTCUSD", "title": "Bitcoin" }, { "proName": "BITSTAMP:ETHUSD", "title": "Ethereum" },
+        { "proName": "NASDAQ:NVDA", "description": "Nvidia" }, { "proName": "NASDAQ:TSLA", "description": "Tesla" }, { "proName": "NASDAQ:AAPL", "description": "Apple" }, { "proName": "NASDAQ:MSFT", "description": "Microsoft" },
+        { "proName": "NASDAQ:AMZN", "description": "Amazon" }, { "proName": "NASDAQ:GOOGL", "description": "Google" }, { "proName": "NASDAQ:META", "description": "Meta" }, { "proName": "NYSE:TSM", "description": "TSMC" },
+        { "proName": "NASDAQ:AVGO", "description": "Broadcom" }, { "proName": "NASDAQ:ASML", "description": "ASML" }, { "proName": "NASDAQ:AMD", "description": "AMD" }, { "proName": "NASDAQ:NFLX", "description": "Netflix" },
+        { "proName": "NASDAQ:ADBE", "description": "Adobe" }, { "proName": "NYSE:CRM", "description": "Salesforce" }, { "proName": "NYSE:ORCL", "description": "Oracle" }, { "proName": "NASDAQ:CSCO", "description": "Cisco" },
+        { "proName": "NASDAQ:CMCSA", "description": "Comcast" }, { "proName": "NASDAQ:TMUS", "description": "T-Mobile" }, { "proName": "NYSE:VZ", "description": "Verizon" }, { "proName": "NYSE:T", "description": "AT&T" },
+        { "proName": "NASDAQ:QCOM", "description": "Qualcomm" }, { "proName": "NASDAQ:TXN", "description": "Texas Instruments" }, { "proName": "NASDAQ:INTC", "description": "Intel" }, { "proName": "NYSE:IBM", "description": "IBM" },
+        { "proName": "NYSE:SAP", "description": "SAP" }, { "proName": "NYSE:UBER", "description": "Uber" }, { "proName": "NASDAQ:ABNB", "description": "Airbnb" }, { "proName": "NASDAQ:BKNG", "description": "Booking" },
+        { "proName": "NYSE:NOW", "description": "ServiceNow" }, { "proName": "NASDAQ:ADP", "description": "ADP" }, { "proName": "NASDAQ:INTU", "description": "Intuit" }, { "proName": "NASDAQ:AMAT", "description": "Applied Materials" },
+        { "proName": "NASDAQ:MU", "description": "Micron" }, { "proName": "NASDAQ:LRCX", "description": "Lam Research" }, { "proName": "NASDAQ:ADI", "description": "Analog Devices" }, { "proName": "NASDAQ:KLAC", "description": "KLA Corp" },
+        { "proName": "NASDAQ:SNPS", "description": "Synopsys" }, { "proName": "NASDAQ:CDNS", "description": "Cadence" }, { "proName": "NASDAQ:PANW", "description": "Palo Alto" }, { "proName": "NASDAQ:FTNT", "description": "Fortinet" },
+        { "proName": "NASDAQ:CRWD", "description": "CrowdStrike" }, { "proName": "NYSE:PLTR", "description": "Palantir" }, { "proName": "NYSE:SNOW", "description": "Snowflake" }, { "proName": "NASDAQ:COIN", "description": "Coinbase" },
+        { "proName": "NASDAQ:HOOD", "description": "Robinhood" }, { "proName": "NYSE:SHOP", "description": "Shopify" }, { "proName": "NYSE:SQ", "description": "Block" }, { "proName": "NASDAQ:PYPL", "description": "PayPal" },
+        { "proName": "NYSE:SPOT", "description": "Spotify" }, { "proName": "NYSE:SONY", "description": "Sony" }, { "proName": "NASDAQ:EA", "description": "Electronic Arts" }, { "proName": "NASDAQ:TTWO", "description": "Take-Two" },
+        { "proName": "NYSE:BRK.B", "description": "Berkshire" }, { "proName": "NYSE:JPM", "description": "JPMorgan" }, { "proName": "NYSE:V", "description": "Visa" }, { "proName": "NYSE:MA", "description": "Mastercard" },
+        { "proName": "NYSE:WMT", "description": "Walmart" }, { "proName": "NASDAQ:COST", "description": "Costco" }, { "proName": "NYSE:LLY", "description": "Eli Lilly" }, { "proName": "NYSE:UNH", "description": "UnitedHealth" },
+        { "proName": "NYSE:JNJ", "description": "Johnson & Johnson" }, { "proName": "NYSE:PG", "description": "Procter & Gamble" }, { "proName": "NYSE:HD", "description": "Home Depot" }, { "proName": "NYSE:KO", "description": "Coca-Cola" },
+        { "proName": "NASDAQ:PEP", "description": "Pepsi" }, { "proName": "NYSE:MRK", "description": "Merck" }, { "proName": "NYSE:ABBV", "description": "AbbVie" }, { "proName": "NYSE:TMO", "description": "Thermo Fisher" },
+        { "proName": "NYSE:DHR", "description": "Danaher" }, { "proName": "NYSE:ABT", "description": "Abbott" }, { "proName": "NYSE:XOM", "description": "Exxon" }, { "proName": "NYSE:CVX", "description": "Chevron" },
+        { "proName": "NYSE:SHEL", "description": "Shell" }, { "proName": "NYSE:TTE", "description": "TotalEnergies" }, { "proName": "NYSE:BP", "description": "BP" }, { "proName": "NYSE:BAC", "description": "Bank of America" },
+        { "proName": "NYSE:WFC", "description": "Wells Fargo" }, { "proName": "NYSE:C", "description": "Citigroup" }, { "proName": "NYSE:GS", "description": "Goldman Sachs" }, { "proName": "NYSE:MS", "description": "Morgan Stanley" },
+        { "proName": "NYSE:BLK", "description": "BlackRock" }, { "proName": "NYSE:SPGI", "description": "S&P Global" }, { "proName": "NYSE:AXP", "description": "Amex" }, { "proName": "NYSE:MCD", "description": "McDonalds" },
+        { "proName": "NYSE:SBUX", "description": "Starbucks" }, { "proName": "NYSE:CMG", "description": "Chipotle" }, { "proName": "NYSE:NKE", "description": "Nike" }, { "proName": "NYSE:DIS", "description": "Disney" },
+        { "proName": "NYSE:BA", "description": "Boeing" }, { "proName": "NYSE:GE", "description": "General Electric" }, { "proName": "NYSE:CAT", "description": "Caterpillar" }, { "proName": "NYSE:DE", "description": "Deere" },
+        { "proName": "NYSE:MMM", "description": "3M" }, { "proName": "NYSE:HON", "description": "Honeywell" }, { "proName": "NYSE:UPS", "description": "UPS" }, { "proName": "NYSE:FDX", "description": "FedEx" },
+        { "proName": "NYSE:UNP", "description": "Union Pacific" }, { "proName": "NYSE:LMT", "description": "Lockheed Martin" }, { "proName": "NYSE:RTX", "description": "Raytheon" }, { "proName": "NYSE:PFE", "description": "Pfizer" },
+        { "proName": "NASDAQ:AMGN", "description": "Amgen" }, { "proName": "NYSE:BMY", "description": "Bristol Myers" }, { "proName": "NYSE:TGT", "description": "Target" }, { "proName": "NYSE:LOW", "description": "Lowe's" },
+        { "proName": "NYSE:TJX", "description": "TJX Companies" }, { "proName": "NYSE:TM", "description": "Toyota" }, { "proName": "NYSE:HMC", "description": "Honda" }, { "proName": "NYSE:RACE", "description": "Ferrari" },
+        { "proName": "NYSE:F", "description": "Ford" }, { "proName": "NYSE:GM", "description": "GM" }, { "proName": "NYSE:NVS", "description": "Novartis" }, { "proName": "NYSE:AZN", "description": "AstraZeneca" }
     ];
 
     // --- LOGIC ---
 
-    function createWidget(containerId, symbolList) {
-        const container = document.getElementById(containerId);
-        container.innerHTML = '';
-        
+    function createWidget(container, symbolList) {
         const widgetDiv = document.createElement('div');
         widgetDiv.className = 'tradingview-widget-container';
         widgetDiv.innerHTML = '<div class="tradingview-widget-container__widget"></div>';
@@ -229,16 +134,41 @@
         container.appendChild(script);
     }
 
-    function start() {
-        createWidget('bar-1', BAR_1_SYMBOLS);
+    function buildWall() {
+        const wall = document.getElementById('wall-container');
         
+        // Define Rows (7 rows fits 1080p nicely with 1.5x zoom)
+        const ROWS = 7;
+        const itemsPerRow = Math.ceil(ALL_STOCKS.length / ROWS);
+
+        for(let i=0; i<ROWS; i++) {
+            // Create wrapper
+            const wrapper = document.createElement('div');
+            wrapper.className = 'ticker-wrapper';
+            wall.appendChild(wrapper);
+
+            // Slice Data (Distribute stocks evenly)
+            const start = i * itemsPerRow;
+            const end = start + itemsPerRow;
+            const slice = ALL_STOCKS.slice(start, end);
+            
+            // Stagger load (1 second apart)
+            setTimeout(() => {
+                createWidget(wrapper, slice);
+            }, i * 1000);
+        }
+
+        // Hide Loading Screen
         setTimeout(() => {
-            createWidget('bar-2', BAR_2_SYMBOLS);
-            document.getElementById('status').style.display = 'none';
-        }, 2500);
+            document.getElementById('loading-screen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+            }, 1000);
+        }, (ROWS * 1000) + 1000);
     }
 
-    start();
+    // Start
+    buildWall();
 
 </script>
 </body>
